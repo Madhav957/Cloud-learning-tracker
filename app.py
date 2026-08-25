@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
 from db import db
-from flask_cors import CORS
+from skills import bp as skills_bp
 
 app = Flask(__name__)
-CORS(app)
+
+app.register_blueprint(skills_bp)
 
 @app.route("/")
 def greet():
@@ -237,9 +238,118 @@ def delete_project(projectid):
         "message": "Project deleted!"
     })
 
+#DATE : 25/08/26
 
 @app.route("/certifications", methods=["POST"])
 def create_certification():
+     data = request.get_json()
+     certification_name = data["certification_name"]
+     provider = data["provider"]
+     category = data["category"]
+     issue_date = data["issue_date"]
+     expiry_date = data["expiry_date"]
+     credential_url = data["credential_url"]
+     userid = data["userid"]
+     cursor = db.cursor()
+     query = """
+     INSERT INTO certifications(certification_name,provider,category,issue_date,expiry_date,credential_url,userid)
+     values(%s, %s, %s,%s,%s,%s,%s)
+     """
+     cursor.execute(query, (
+     certification_name,
+     provider,
+     category,
+     issue_date,
+     expiry_date,
+     credential_url,
+     userid
+     ))
+     db.commit()
+     cursor.close()
+     return jsonify({
+          "message" : "Certificate Created !"
+     }),201
+
+@app.route("/users/<userid>/certifications",methods = ["GET"])
+def get_certifications(userid):
+     cursor = db.cursor(dictionary=True)
+     query = "SELECT * FROM certifications WHERE userid = %s"
+     cursor.execute(query,(userid,))
+     certifications = cursor.fetchall()
+     cursor.close()
+     return jsonify(certifications)
+
+@app.route("/certifications/<certid>",methods = ["GET"])
+def get_certification(certid):
+     cursor = db.cursor(dictionary=True)
+     query = "SELECT * FROM certifications WHERE certid = %s"
+     cursor.execute(query,(certid,))
+     certifications = cursor.fetchone()
+     cursor.close()
+     return jsonify(certifications)
+
+@app.route("/certifications/<certid>", methods=["PUT"])
+def update_certification(certid):
+
+    data = request.get_json()
+
+    certification_name = data["certification_name"]
+    provider = data["provider"]
+    category = data["category"]
+    issue_date = data["issue_date"]
+    expiry_date = data["expiry_date"]
+    credential_url = data["credential_url"]
+
+    cursor = db.cursor()
+
+    query = """
+    UPDATE certifications
+    SET certification_name = %s,
+        provider = %s,
+        category = %s,
+        issue_date = %s,
+        expiry_date = %s,
+        credential_url = %s
+    WHERE certid = %s
+    """
+
+    cursor.execute(
+        query,
+        (
+            certification_name,
+            provider,
+            category,
+            issue_date,
+            expiry_date,
+            credential_url,
+            certid
+        )
+    )
+
+    db.commit()
+    cursor.close()
+
+    return jsonify({
+        "message": "Certification updated!"
+    })
+
+@app.route("/certifications/<certid>", methods=["DELETE"])
+def delete_certification(certid):
+
+    cursor = db.cursor()
+
+    query = "DELETE FROM certifications WHERE certid = %s"
+
+    cursor.execute(query, (certid,))
+
+    db.commit()
+    cursor.close()
+
+    return jsonify({
+        "message": "Certification deleted!"
+    })
+
+
 
 
 if __name__ == "__main__":
